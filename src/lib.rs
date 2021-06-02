@@ -1,6 +1,7 @@
 mod utils;
 
-use rand::Rng;
+extern crate js_sys;
+
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -8,13 +9,6 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-#[allow(unused_macros)]
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
 
 #[wasm_bindgen]
 pub enum UniverseType {
@@ -75,11 +69,9 @@ impl Universe {
 }
 
 fn random_cells(width: u32, height: u32) -> Vec<Cell> {
-    let mut rng = rand::thread_rng();
     (0..width * height)
         .map(|_| {
-            let random_num = rng.gen_range(0..10);
-            if random_num < 5 {
+            if js_sys::Math::random() < 0.5 {
                 Cell::Alive
             } else {
                 Cell::Dead

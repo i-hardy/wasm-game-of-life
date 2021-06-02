@@ -1,7 +1,7 @@
 import { Cell } from "wasm-game-of-life";
 import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
 
-export const UNIVERSE_SIZE = 64;
+export const UNIVERSE_SIZE = 128;
 export const CELL_SIZE = 10;
 const GRID_COLOR = '#CCCCCC';
 const DEAD_COLOR = '#FFFFFF';
@@ -43,11 +43,31 @@ export function createCanvas(canvas) {
       
     ctx.beginPath();
     
+    ctx.fillStyle = ALIVE_COLOR;
     for (let row = 0; row < height; row++) {
       for (let col = 0; col < width; col++) {
         const idx = getIndex(row, col);
         
-        ctx.fillStyle = cells[idx] === Cell.Alive ? ALIVE_COLOR : DEAD_COLOR;
+        if (cells[idx] === Cell.Dead) {
+          continue;
+        }
+        ctx.fillRect(
+          col * (CELL_SIZE + 1) + 1,
+          row * (CELL_SIZE + 1) + 1,
+          CELL_SIZE,
+          CELL_SIZE
+        );
+      }
+    }
+
+    ctx.fillStyle = DEAD_COLOR;
+    for (let row = 0; row < height; row++) {
+      for (let col = 0; col < width; col++) {
+        const idx = getIndex(row, col);
+        
+        if (cells[idx] === Cell.Alive) {
+          continue;
+        }
         ctx.fillRect(
           col * (CELL_SIZE + 1) + 1,
           row * (CELL_SIZE + 1) + 1,
