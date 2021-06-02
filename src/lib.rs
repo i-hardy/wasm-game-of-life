@@ -1,5 +1,8 @@
 mod utils;
 
+extern crate fixedbitset;
+
+use fixedbitset::FixedBitSet;
 use rand::Rng;
 use wasm_bindgen::prelude::*;
 
@@ -21,7 +24,7 @@ pub enum Cell {
 pub struct Universe {
     width: u32,
     height: u32,
-    cells: Vec<Cell>,
+    cells: FixedBitSet,
 }
 
 impl Universe {
@@ -54,8 +57,8 @@ impl Universe {
     pub fn height(&self) -> u32 {
         self.height
     }
-    pub fn cells(&self) -> *const Cell {
-        self.cells.as_ptr()
+    pub fn cells(&self) -> *const u32 {
+        self.cells.as_slice().as_ptr()
     }
     pub fn tick(&mut self) {
         let mut next = self.cells.clone();
@@ -67,14 +70,14 @@ impl Universe {
                 let live_neighbours = self.live_neighbour_count(row, col);
                 
                 let next_cell = match (cell, live_neighbours) {
-                    (Cell::Alive, x) if x < 2 => Cell::Dead,
-                    (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
-                    (Cell::Alive, x) if x > 3 => Cell::Dead,
-                    (Cell::Dead, 3) => Cell::Alive,
+                    (true, x) if x < 2 => false,
+                    (true, 2) | (true, 3) => true,
+                    (true, x) if x > 3 => false,
+                    (false, 3) => true,
                     (otherwise, _) => otherwise,
                 };
                 
-                next[idx] = next_cell;
+                next.set(idx, next_cell);
             }
         }
         
@@ -85,15 +88,13 @@ impl Universe {
         let width = 64;
         let height = 64;
         
-        let cells = (0..width * height)
-            .map(|_| {
-                let random_num = rng.gen_range(0..10);
-                if random_num < 5 {
-                    Cell::Alive
-                } else {
-                    Cell::Dead
-                }
-            }).collect();
+        let size = (width * height) as usize;
+        let mut cells = FixedBitSet::with_capacity(size);
+        
+        for i in 0..size {
+            let random_num = rng.gen_range(0..10);
+            cells.set(i, random_num < 5);
+        }
 
         Universe {
             width,
