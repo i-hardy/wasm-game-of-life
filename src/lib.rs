@@ -1,6 +1,7 @@
 mod utils;
 
 extern crate fixedbitset;
+extern crate web_sys;
 
 use fixedbitset::FixedBitSet;
 use rand::Rng;
@@ -11,6 +12,13 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+#[allow(unused_macros)]
+macro_rules! log {
+    ( $( $t:tt)* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    };
+}
 
 #[wasm_bindgen]
 pub struct Universe {
@@ -76,6 +84,7 @@ impl Universe {
         self.cells = next;
     }
     pub fn new() -> Universe {
+        utils::set_panic_hook();
         let mut rng = rand::thread_rng();
         let width = 64;
         let height = 64;
