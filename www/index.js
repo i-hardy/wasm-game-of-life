@@ -1,4 +1,4 @@
-import { Universe } from "wasm-game-of-life";
+import { Universe, Cell } from "wasm-game-of-life";
 import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
 
 const CELL_SIZE = 10;
@@ -6,15 +6,19 @@ const GRID_COLOR = '#CCCCCC';
 const DEAD_COLOR = '#FFFFFF';
 const ALIVE_COLOR = '#000000'; 
 
-const universe = Universe.new();
+const universe = Universe.new(64);
 const width = universe.width();
 const height = universe.height();
+
+const playPause = document.querySelector('#play-pause');
 
 const canvas = document.querySelector('#game-of-life-canvas');
 canvas.height = (CELL_SIZE + 1) * height + 1;
 canvas.width = (CELL_SIZE + 1) * width + 1;
 
 const ctx = canvas.getContext('2d');
+
+let gameInterval = null;
 
 function drawGrid() {
   ctx.beginPath();
@@ -37,15 +41,9 @@ function getIndex(row, column) {
   return row * width + column;
 }
 
-function bitIsSet(num, array) {
-  const byte = Math.floor(num / 8);
-  const mask = 1 << (num % 8);
-  return (array[byte] & mask) === mask;
-}
-
 function drawCells() {
   const cellsPtr = universe.cells();
-  const cells = new Uint8Array(memory.buffer, cellsPtr, width * height / 8);
+  const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
     
   ctx.beginPath();
   
@@ -53,7 +51,7 @@ function drawCells() {
     for (let col = 0; col < width; col++) {
       const idx = getIndex(row, col);
       
-      ctx.fillStyle = bitIsSet(idx, cells) ? ALIVE_COLOR : DEAD_COLOR;
+      ctx.fillStyle = cells[idx] === Cell.Alive ? ALIVE_COLOR : DEAD_COLOR;
       ctx.fillRect(
         col * (CELL_SIZE + 1) + 1,
         row * (CELL_SIZE + 1) + 1,
@@ -72,4 +70,36 @@ function renderLoop() {
   universe.tick();
 }
 
-setInterval(renderLoop, 100);
+playPause.addEventListener('click', () => {
+  if (gameInterval === null) {
+    gameInterval = setInterval(renderLoop, 100);
+    playPause.textContent = 'Pause';
+  } else {
+    clearInterval(gameInterval);
+    gameInterval = null;
+    playPause.textContent = 'Play';
+  }
+})
+
+canvas.addEventListener("click", event => {
+  const boundingRect = canvas.getBoundingClientRect();
+
+  const scaleX = canvas.width / boundingRect.width;
+  const scaleY = canvas.height / boundingRect.height;
+
+  const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
+  const canvasTop = (event.clientY - boundingRect.top) * scaleY;
+
+  const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
+  const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
+
+  universe.toggle_cell(row, col);
+
+  drawGrid();
+  drawCells();
+});
+
+(() => {
+  drawGrid();
+  drawCells();
+})();
