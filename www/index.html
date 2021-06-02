@@ -17,7 +17,11 @@
   </head>
   <body>
     <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
-    <button class="button is-primary mb-2" id="play-pause">Play</button>
+    <div class="buttons mb-2">
+      <button class="button is-info is-light" id="random">New random grid</button>
+      <button class="button is-primary" id="play-pause">Play</button>
+      <button class="button is-info is-light" id="empty">New empty grid</button>
+    </div>
     <canvas id="game-of-life-canvas"></canvas>
     <script src="./bootstrap.js"></script>
   </body>

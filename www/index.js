@@ -1,87 +1,69 @@
-import { Universe, Cell } from "wasm-game-of-life";
-import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
+import { Universe, UniverseType } from "wasm-game-of-life";
 
-const CELL_SIZE = 10;
-const GRID_COLOR = '#CCCCCC';
-const DEAD_COLOR = '#FFFFFF';
-const ALIVE_COLOR = '#000000'; 
+import { UNIVERSE_SIZE, CELL_SIZE, createCanvas } from "./render";
 
-const universe = Universe.new(64);
-const width = universe.width();
-const height = universe.height();
+let universe = Universe.new(UNIVERSE_SIZE, UniverseType.Random);
 
 const playPause = document.querySelector('#play-pause');
-
+const newRandom = document.querySelector('#random');
+const newEmpty = document.querySelector('#empty');
 const canvas = document.querySelector('#game-of-life-canvas');
-canvas.height = (CELL_SIZE + 1) * height + 1;
-canvas.width = (CELL_SIZE + 1) * width + 1;
-
-const ctx = canvas.getContext('2d');
 
 let gameInterval = null;
 
-function drawGrid() {
-  ctx.beginPath();
-  ctx.strokeStyle = GRID_COLOR;
-  
-  for (let i = 0; i <= width; i++) {
-    ctx.moveTo(i * (CELL_SIZE + 1) + 1, 0);
-    ctx.lineTo(i * (CELL_SIZE + 1) + 1, (CELL_SIZE + 1) * height + 1);
-  }
+const {
+  drawGrid,
+  drawCells,
+} = createCanvas(canvas);
 
-  for (let j = 0; j <= height; j++) {
-    ctx.moveTo(0, j * (CELL_SIZE + 1) + 1);
-    ctx.lineTo((CELL_SIZE + 1) * width + 1, j * (CELL_SIZE + 1) + 1);
-  }
-
-  ctx.stroke();
-}
-
-function getIndex(row, column) {
-  return row * width + column;
-}
-
-function drawCells() {
-  const cellsPtr = universe.cells();
-  const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
-    
-  ctx.beginPath();
-  
-  for (let row = 0; row < height; row++) {
-    for (let col = 0; col < width; col++) {
-      const idx = getIndex(row, col);
-      
-      ctx.fillStyle = cells[idx] === Cell.Alive ? ALIVE_COLOR : DEAD_COLOR;
-      ctx.fillRect(
-        col * (CELL_SIZE + 1) + 1,
-        row * (CELL_SIZE + 1) + 1,
-        CELL_SIZE,
-        CELL_SIZE
-      );
-    }
-  }
-  
-  ctx.stroke();
-}
-
-function renderLoop() {
+function draw(universe) {
   drawGrid();
-  drawCells();
+  drawCells(universe);
+}
+
+function renderLoop(universe) {
+  draw(universe);
   universe.tick();
+}
+
+function drawPulsar(universe, clickRow, clickCol) {
+  universe.toggle_cell(clickRow -1, clickCol);
+  universe.toggle_cell(clickRow, clickCol);
+  universe.toggle_cell(clickRow + 1, clickCol);
+}
+
+function drawGlider(universe, clickRow, clickCol) {
+  universe.toggle_cell(clickRow - 1, clickCol - 1);
+  universe.toggle_cell(clickRow, clickCol);
+  universe.toggle_cell(clickRow, clickCol + 1);
+  universe.toggle_cell(clickRow + 1, clickCol);
+  universe.toggle_cell(clickRow + 1, clickCol - 1);
 }
 
 playPause.addEventListener('click', () => {
   if (gameInterval === null) {
-    gameInterval = setInterval(renderLoop, 100);
+    gameInterval = setInterval(() => renderLoop(universe), 100);
     playPause.textContent = 'Pause';
   } else {
     clearInterval(gameInterval);
     gameInterval = null;
     playPause.textContent = 'Play';
   }
-})
+});
 
-canvas.addEventListener("click", event => {
+newRandom.addEventListener('click', () => {
+  universe = Universe.new(UNIVERSE_SIZE, UniverseType.Random);
+  draw(universe);
+});
+
+newEmpty.addEventListener('click', () => {
+  universe = Universe.new(UNIVERSE_SIZE, UniverseType.Empty);
+  draw(universe);
+});
+
+canvas.addEventListener('contextmenu', event => event.preventDefault());
+
+canvas.addEventListener("mousedown", event => {
   const boundingRect = canvas.getBoundingClientRect();
 
   const scaleX = canvas.width / boundingRect.width;
@@ -90,16 +72,20 @@ canvas.addEventListener("click", event => {
   const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
   const canvasTop = (event.clientY - boundingRect.top) * scaleY;
 
-  const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
-  const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
+  const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), UNIVERSE_SIZE - 1);
+  const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), UNIVERSE_SIZE - 1);
 
-  universe.toggle_cell(row, col);
+  if (event.shiftKey) {
+    drawPulsar(universe, row, col);
+  } else if (event.ctrlKey) {
+    drawGlider(universe, row, col);
+  } else {
+    universe.toggle_cell(row, col);
+  }
 
-  drawGrid();
-  drawCells();
+  draw(universe);
 });
 
 (() => {
-  drawGrid();
-  drawCells();
+  draw(universe);
 })();

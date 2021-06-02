@@ -17,6 +17,18 @@ macro_rules! log {
 }
 
 #[wasm_bindgen]
+pub enum UniverseType {
+    Random,
+    Empty,
+}
+
+impl Default for UniverseType {
+    fn default() -> Self {
+        UniverseType::Random
+    }
+}
+
+#[wasm_bindgen]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Cell {
@@ -62,6 +74,23 @@ impl Universe {
     }
 }
 
+fn random_cells(width: u32, height: u32) -> Vec<Cell> {
+    let mut rng = rand::thread_rng();
+    (0..width * height)
+        .map(|_| {
+            let random_num = rng.gen_range(0..10);
+            if random_num < 5 {
+                Cell::Alive
+            } else {
+                Cell::Dead
+            }
+        }).collect()
+}
+
+fn empty_cells(width: u32, height: u32) -> Vec<Cell> {
+    vec![Cell::Dead; (width * height) as usize]
+}
+
 #[wasm_bindgen]
 impl Universe {
     pub fn width(&self) -> u32 {
@@ -75,7 +104,9 @@ impl Universe {
     }
     pub fn toggle_cell(&mut self, row: u32, column: u32) {
         let idx = self.get_index(row, column);
-        self.cells[idx].toggle();
+        if idx < self.cells.len() {
+            self.cells[idx].toggle();
+        }
     }
     pub fn tick(&mut self) {
         let mut next = self.cells.clone();
@@ -100,21 +131,15 @@ impl Universe {
         
         self.cells = next;
     }
-    pub fn new() -> Universe {
+    pub fn new(size: u32, kind: Option<UniverseType>) -> Universe {
         utils::set_panic_hook();
-        let mut rng = rand::thread_rng();
-        let width = 64;
-        let height = 64;
+        let width = size;
+        let height = size;
         
-        let cells = (0..width * height)
-            .map(|_| {
-                let random_num = rng.gen_range(0..10);
-                if random_num < 5 {
-                    Cell::Alive
-                } else {
-                    Cell::Dead
-                }
-            }).collect();
+        let cells = match kind.unwrap_or_default() {
+            UniverseType::Empty => empty_cells(width, height),
+            UniverseType::Random => random_cells(width, height),
+        };
 
         Universe {
             width,
