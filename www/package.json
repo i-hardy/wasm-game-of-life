@@ -9,7 +9,7 @@
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "start": "webpack-dev-server",
-    "deploy": "gh-pages -d dist -b gh-pages"
+    "deploy": "npm run build && gh-pages -d dist -b gh-pages"
   },
   "repository": {
     "type": "git",

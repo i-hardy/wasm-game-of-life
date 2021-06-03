@@ -2,6 +2,8 @@
 
 An implementation of Conway's Game of Life using Rust and WebAssembly. Created following the [Rust & WebAssembly Book](https://rustwasm.github.io/docs/book/introduction.html).
 
+[Live demo](https://i-hardy.github.io/wasm-game-of-life/)
+
 ## Setup
 
 1. Install the [Rust toolchain](https://www.rust-lang.org/tools/install) and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
